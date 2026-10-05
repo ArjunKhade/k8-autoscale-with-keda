@@ -1,0 +1,12 @@
+{
+  "name": "receiver-service",
+  "version": "1.0.0",
+  "description": "Receiver application processing files with competing consumers and fair dispatch (prefetch=1)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  }
+}

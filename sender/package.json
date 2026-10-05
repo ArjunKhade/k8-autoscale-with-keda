@@ -1,0 +1,12 @@
+{
+  "name": "sender-service",
+  "version": "1.0.0",
+  "description": "Sender application publishing simulated file paths to RabbitMQ every 5 seconds",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  }
+}

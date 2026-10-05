@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: receiver-deployment
+  namespace: file-demo
+  labels:
+    app: receiver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: receiver
+  template:
+    metadata:
+      labels:
+        app: receiver
+    spec:
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: receiver
+        image: receiver-service:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: RABBITMQ_URL
+          value: "amqp://guest:guest@rabbitmq-service.file-demo.svc.cluster.local:5672"
+        - name: QUEUE_NAME
+          value: "file_processing_queue"
+        - name: SHARED_STORAGE_DIR
+          value: "/shared-data"
+        - name: PROCESSING_TIME_MS
+          value: "5000"
+        volumeMounts:
+        - name: shared-storage
+          mountPath: /shared-data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 300m
+            memory: 256Mi
+      volumes:
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: shared-file-pvc

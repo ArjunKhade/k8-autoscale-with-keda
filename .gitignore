@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Local shared data
+shared-data/
+*.txt
+
+# Archive and temporary files
+*.tar
+*.log
+
+# Environment & IDE
+.env
+.vscode/
+.idea/
