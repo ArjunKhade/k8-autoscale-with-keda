@@ -176,3 +176,50 @@ Imagine a busy **Restaurant Kitchen**:
    * The Sender places the actual file onto a shared storage volume (`/shared-data`).
    * The message only contains the relative key (e.g. `document_123.txt`).
    * Any Linux worker pod opens `/shared-data/document_123.txt` directly without OS path conflicts.
+
+---
+
+## How Dynamic Auto-Scaling (1 -> 10 -> 1 Pods) Works
+
+### 1. Scaling Up to 10 Pods (Traffic Spike)
+When incoming messages spike beyond what current pods can handle, KEDA automatically calculates the required replicas based on:
+$$\text{Replicas} = \frac{\text{Queue Length}}{\text{Target Value (3)}}$$
+* When the backlog reaches 30+ messages, KEDA scales the receiver deployment up to `maxReplicaCount: 10`.
+
+### 2. Scaling Down to 1 Pod (Fast Stabilization Window)
+By default, Kubernetes Horizontal Pod Autoscaler (HPA) enforces a **5-minute (300 seconds) scale-down stabilization window** to prevent pod "flapping" (scaling down too fast during fluctuating traffic).
+
+In [k8s/05-keda-autoscaler.yaml](k8s/05-keda-autoscaler.yaml), we configured the HPA `behavior.scaleDown` block to override this default so scale-down occurs within **10 seconds** once the queue drains:
+
+```yaml
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 10   # Overrides Kubernetes 5-minute default
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 10
+```
+
+### 3. Step-by-Step Test: Watch Scaling in Action
+
+1. **Open a live watcher in your terminal:**
+   ```powershell
+   kubectl get pods,hpa -n file-demo -w
+   ```
+2. **Trigger a spike (scales to 10 pods):**
+   ```powershell
+   kubectl scale deployment/sender-deployment -n file-demo --replicas=8
+   ```
+   *Watch pods scale from 1 -> 4 -> 10.*
+3. **Stop traffic (scales down to 1 pod):**
+   ```powershell
+   kubectl scale deployment/sender-deployment -n file-demo --replicas=0
+   ```
+   *Watch remaining messages drain and all extra pods terminate down to 1 within ~15 seconds.*
+4. **Restore normal traffic:**
+   ```powershell
+   kubectl scale deployment/sender-deployment -n file-demo --replicas=1
+   ```
